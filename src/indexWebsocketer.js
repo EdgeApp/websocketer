@@ -49,26 +49,25 @@ class Connection {
   ws: Object
   client: net.Socket
   address: string
+  tcpServer: string
+  tcpPort: number
 
   constructor (ws, addrPort) {
     this.ws = ws
     this.client = new net.Socket()
     this.client.setEncoding('utf8')
     this.address = addrPort
+    this.tcpServer = ''
+    this.tcpPort = 0
   }
 
   init () {
-    const tcpServer = CONFIG.tcpServers[0]
-    const host = tcpServer.split(':')[0]
-    const port = tcpServer.split(':')[1]
-    this.client.connect({host, port}, () => {
-      console.log('Connected')
-    })
-
-    this.client.on('close', () => {
+    this.client.on('close', (message) => {
+      console.log(message)
       deleteConnection(this.address)
     })
-    this.client.on('error', () => {
+    this.client.on('error', (error) => {
+      console.log(error)
       deleteConnection(this.address)
     })
 
@@ -83,14 +82,44 @@ class Connection {
     })
 
     this.ws.on('message', (message) => {
-      this.client.write(message + '\r\n', 'utf8', (error) => {
-        if (error) {
-          console.log('Error writing to WS')
+      if (this.tcpServer) {
+        // Already connected
+        this.client.write(message + '\r\n', 'utf8', (error) => {
+          if (error) {
+            console.log('Error writing to WS')
+            deleteConnection(this.address)
+          } else {
+            console.log('Socket write!')
+          }
+        })
+      } else {
+        // Get the requested server to connect to
+        try {
+          const { host, port } = JSON.parse(message)
+          if (!host || !port) {
+            deleteConnection(this.address)
+          }
+          this.client.connect({host, port}, (error) => {
+            console.log('Connected', error)
+            this.tcpServer = host
+            this.tcpPort = port
+            this.ws.send(JSON.stringify({ status: 'OK' }))
+          })
+        } catch (e) {
+          console.log(e)
           deleteConnection(this.address)
-        } else {
-          console.log('Socket write!')
         }
-      })
+      }
+    })
+
+    this.ws.on('close', (error) => {
+      console.log('Websocket close', error)
+      deleteConnection(this.address)
+    })
+
+    this.ws.on('error', (error) => {
+      console.log('Websocket error', error)
+      deleteConnection(this.address)
     })
   }
 }

@@ -1,0 +1,56 @@
+{
+  "name": "websocketer",
+  "version": "0.0.1",
+  "description": "Websocket to TCP bridge with simple UTF8 text support",
+  "main": "lib/indexWebsocketer.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/EdgeApp/websocketer.git"
+  },
+  "keywords": [
+    "Edge",
+    "Wallet",
+    "websocket",
+    "tcp"
+  ],
+  "author": "Paul Puey <paul@edge.app>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EdgeApp/websocketer/issues"
+  },
+  "homepage": "https://github.com/EdgeApp/websocketer/#readme",
+  "dependencies": {
+    "ws": "^6.1.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.2.3",
+    "chai": "^3.5.0",
+    "chai-as-promised": "^6.0.0",
+    "eslint-plugin-flowtype": "^2.46.3",
+    "eslint-plugin-promise": "^3.7.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "flow-bin": "^0.70.0",
+    "flow-remove-types": "^1.2.3",
+    "husky": "^0.14.3",
+    "mocha": "^3.1.2",
+    "standard": "^11.0.1"
+  },
+  "standard": {
+    "parser": "babel-eslint",
+    "plugins": [
+      "flowtype"
+    ]
+  },
+  "scripts": {
+    "build": "flow-remove-types src/ -d lib/ && flow-remove-types testsrc/ -d test/",
+    "built": "npm run build && npm run test",
+    "flow": "flow",
+    "lint2": "standard --parser babel-eslint --plugin flowtype src/**/*.js",
+    "lint:fix": "standard '*.js' 'src/**/*.js' 'testsrc/**/*.js' --fix",
+    "lint": "standard '*.js' 'src/**/*.js' 'testsrc/**/*.js' && npm run flow",
+    "test": "npm run lint && mocha",
+    "precommit": "npm run build && npm run lint",
+    "prepare": "npm run build",
+    "start": "node lib/indexUtil.js"
+  }
+}

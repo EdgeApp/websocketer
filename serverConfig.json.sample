@@ -1,0 +1,8 @@
+{
+  "sslPrivateKeyPath": "",
+  "sslCertPath": "",
+  "wsPort": 50001,
+  "tcpServers": [
+    "electrum://electrum.hsmiths.com:8080"
+  ]
+}

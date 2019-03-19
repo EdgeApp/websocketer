@@ -165,7 +165,11 @@ class Connection {
     this.client.connect(
       { host: this.tcpServer, port: this.tcpPort },
       status => {
-        this.connlog(`Connected status=${status}`)
+        if (status) {
+          this.connlog(`Connected status=${status}`)
+        } else {
+          this.connlog(`Connected`)
+        }
         this.tcpConnected = true
 
         this.ws.on('message', message => {

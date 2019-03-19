@@ -36,6 +36,11 @@ const wss = new WebSocket.Server({ server })
 //   }
 // })
 
+function logger(...args) {
+  const d = makeDate()
+  console.log(`${d} `, ...args)
+}
+
 const _connections = {}
 
 function closeWebSocket(ws) {
@@ -45,25 +50,25 @@ wss.on('connection', (ws, req) => {
   const address = req.connection.remoteAddress
   const port = req.connection.remotePort
   const url = req.url
-  const addrPort = `${address}:${port} ${url}`
-  console.log(`Connection made ${addrPort}`)
+  const addrPort = `${address}:${port}`
+  logger(`Connection made ${addrPort}`)
 
   // Parse url
   const splitUrl = url.split('/')
   if (splitUrl.length !== 4) {
-    console.log('Invalid url passed')
+    logger(`Invalid url passed: ${url}`)
     closeWebSocket(ws)
     return
   }
   if (splitUrl[1] !== 'tcp' && splitUrl[1] !== 'tls') {
-    console.log('Invalid protocol')
+    logger(`Invalid protocol: ${splitUrl[1]}`)
     closeWebSocket(ws)
     return
   }
   const destProtocol = splitUrl[1]
 
   if (splitUrl[2].length < 4 || splitUrl[2].length > 30) {
-    console.log('Invalid server')
+    logger(`Invalid server: ${splitUrl[2]}`)
     closeWebSocket(ws)
     return
   }
@@ -71,7 +76,7 @@ wss.on('connection', (ws, req) => {
 
   const destPort = parseInt(splitUrl[3])
   if (!(destPort > 0 && destPort < 65536)) {
-    console.log('Invalid port')
+    logger(`Invalid port: ${splitUrl[3]}`)
     closeWebSocket(ws)
     return
   }
@@ -89,6 +94,25 @@ function deleteConnection(addrPort: string) {
     delete _connections[addrPort]
   }
 }
+
+function makeDate() {
+  const end = new Date()
+  let m = (end.getUTCMonth() + 1).toString()
+  if (m.length < 2) m = `0${m}`
+  let d = end.getUTCDate().toString()
+  if (d.length < 2) d = `0${d}`
+  let h = end.getHours().toString()
+  if (h.length < 2) h = `0${h}`
+  let min = end.getMinutes().toString()
+  if (min.length < 2) min = `0${d}`
+  let s = end.getSeconds().toString()
+  if (s.length < 2) s = `0${d}`
+  let ms = end.getMilliseconds().toString()
+  if (ms.length == 2) ms = `0${d}`
+  if (ms.length < 2) ms = `00${d}`
+  return `${m}-${d}-${h}:${min}:${s}.${ms}`
+}
+
 class Connection {
   ws: Object
   client: net.Socket | tls.TLSSocket
@@ -112,21 +136,26 @@ class Connection {
     this.tcpConnected = false
   }
 
+  connlog (...args) {
+    const d = makeDate()
+    console.log(`${d} ${this.address} > ${this.tcpServer}:${this.tcpPort}`, ...args)
+  }
+
   init() {
     this.client.on('close', message => {
-      console.log(`TCP closed: ${message}`)
+      this.connlog(`TCP closed: ${message}`)
       deleteConnection(this.address)
     })
     this.client.on('error', error => {
-      console.log(`TCP errored: ${error}`)
+      this.connlog(`TCP errored: ${error}`)
       deleteConnection(this.address)
     })
 
     this.client.on('data', data => {
-      console.log(`Received TCP data: ${data}`)
+      this.connlog(`Received TCP data`)
       this.ws.send(data, error => {
         if (error) {
-          console.log('Error sending data to WS')
+          this.connlog('Error sending data to WS')
           // Delete connection
           deleteConnection(this.address)
         }
@@ -136,17 +165,17 @@ class Connection {
     this.client.connect(
       { host: this.tcpServer, port: this.tcpPort },
       status => {
-        console.log(`Connected status=${status}`)
+        this.connlog(`Connected status=${status}`)
         this.tcpConnected = true
 
         this.ws.on('message', message => {
-          console.log(`Received WS: ${message}`)
+          // this.connlog(`Received WS: ${message}`)
           this.client.write(message, 'utf8', error => {
             if (error) {
-              console.log('Error writing to WS', error)
+              this.connlog('Error writing to WS', error)
               deleteConnection(this.address)
             } else {
-              console.log('Socket write!')
+              // this.connlog('Socket write!')
             }
           })
         })
@@ -154,12 +183,12 @@ class Connection {
     )
 
     this.ws.on('close', error => {
-      console.log('Websocket close', error)
+      this.connlog('Websocket close', error)
       deleteConnection(this.address)
     })
 
     this.ws.on('error', error => {
-      console.log('Websocket error', error)
+      this.connlog('Websocket error', error)
       deleteConnection(this.address)
     })
   }

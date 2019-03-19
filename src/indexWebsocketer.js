@@ -88,7 +88,6 @@ function deleteConnection(addrPort: string) {
     c.client.destroy()
     delete _connections[addrPort]
   }
-  console.log(`Connections: `, _connections)
 }
 class Connection {
   ws: Object

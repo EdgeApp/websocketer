@@ -36,14 +36,14 @@ const wss = new WebSocket.Server({ server })
 //   }
 // })
 
-function logger(...args) {
+function logger (...args) {
   const d = makeDate()
   console.log(`${d} `, ...args)
 }
 
 const _connections = {}
 
-function closeWebSocket(ws) {
+function closeWebSocket (ws) {
   ws.close()
 }
 wss.on('connection', (ws, req) => {
@@ -86,7 +86,7 @@ wss.on('connection', (ws, req) => {
   _connections[addrPort] = c
 })
 
-function deleteConnection(addrPort: string) {
+function deleteConnection (addrPort: string) {
   const c = _connections[addrPort]
   if (c) {
     closeWebSocket(c.ws)
@@ -95,7 +95,7 @@ function deleteConnection(addrPort: string) {
   }
 }
 
-function makeDate() {
+function makeDate () {
   const end = new Date()
   let m = (end.getUTCMonth() + 1).toString()
   if (m.length < 2) m = `0${m}`
@@ -108,7 +108,7 @@ function makeDate() {
   let s = end.getSeconds().toString()
   if (s.length < 2) s = `0${d}`
   let ms = end.getMilliseconds().toString()
-  if (ms.length == 2) ms = `0${d}`
+  if (ms.length === 2) ms = `0${d}`
   if (ms.length < 2) ms = `00${d}`
   return `${m}-${d}-${h}:${min}:${s}.${ms}`
 }
@@ -120,8 +120,9 @@ class Connection {
   tcpServer: string
   tcpPort: number
   tcpConnected: boolean
+  earlyCache: string
 
-  constructor(ws, addrPort, destProtocol, destServer, destPort) {
+  constructor (ws, addrPort, destProtocol, destServer, destPort) {
     this.ws = ws
     if (destProtocol === 'tcp') {
       this.client = new net.Socket()
@@ -134,6 +135,7 @@ class Connection {
     this.tcpServer = destServer
     this.tcpPort = destPort
     this.tcpConnected = false
+    this.earlyCache = ''
   }
 
   connlog (...args) {
@@ -141,7 +143,7 @@ class Connection {
     console.log(`${d} ${this.address} > ${this.tcpServer}:${this.tcpPort}`, ...args)
   }
 
-  init() {
+  init () {
     this.client.on('close', message => {
       this.connlog(`TCP closed: ${message}`)
       deleteConnection(this.address)
@@ -158,10 +160,28 @@ class Connection {
           this.connlog('Error sending data to WS')
           // Delete connection
           deleteConnection(this.address)
+        } else {
+          this.connlog('Success sending data to WS')
         }
       })
     })
-
+    this.connlog('about to call client.connect')
+    this.ws.on('message', message => {
+      this.connlog(`Received WS`)
+      if (this.tcpConnected) {
+        this.client.write(message, 'utf8', error => {
+          if (error) {
+            this.connlog('Error writing to WS', error)
+            deleteConnection(this.address)
+          } else {
+            this.connlog('Socket write!')
+          }
+        })
+      } else {
+        this.connlog('Caching message: ', message)
+        this.earlyCache += message
+      }
+    })
     this.client.connect(
       { host: this.tcpServer, port: this.tcpPort },
       status => {
@@ -170,19 +190,18 @@ class Connection {
         } else {
           this.connlog(`Connected`)
         }
-        this.tcpConnected = true
-
-        this.ws.on('message', message => {
-          // this.connlog(`Received WS: ${message}`)
-          this.client.write(message, 'utf8', error => {
+        if (this.earlyCache) {
+          this.connlog('Writing early cache: to TCP')
+          this.client.write(this.earlyCache, 'utf8', error => {
             if (error) {
               this.connlog('Error writing to WS', error)
               deleteConnection(this.address)
             } else {
-              // this.connlog('Socket write!')
+              this.connlog('Socket write!')
             }
           })
-        })
+        }
+        this.tcpConnected = true
       }
     )
 

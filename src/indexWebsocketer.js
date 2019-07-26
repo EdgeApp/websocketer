@@ -178,7 +178,7 @@ class Connection {
           }
         })
       } else {
-        this.connlog('Caching message: ', message)
+        this.connlog('Caching message')
         this.earlyCache += message
       }
     })

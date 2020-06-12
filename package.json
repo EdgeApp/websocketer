@@ -51,6 +51,6 @@
     "test": "npm run lint && mocha",
     "precommit": "npm run build && npm run lint",
     "prepare": "npm run build",
-    "start": "node lib/indexUtil.js"
+    "start": "node lib/indexWebsocketer.js"
   }
 }

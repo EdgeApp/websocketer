@@ -3,17 +3,17 @@
 
 const CONFIG = require('../serverConfig.json')
 const WebSocket = require('ws')
-const https = require('https')
+// const https = require('https')
 const net = require('net')
 const tls = require('tls')
-const fs = require('fs')
+// const fs = require('fs')
 
-const opts = {
-  cert: fs.readFileSync(CONFIG.sslCertPath),
-  key: fs.readFileSync(CONFIG.sslPrivateKeyPath)
-}
-const server = new https.createServer(opts)
-const wss = new WebSocket.Server({ server })
+// const opts = {
+//   cert: fs.readFileSync(CONFIG.sslCertPath),
+//   key: fs.readFileSync(CONFIG.sslPrivateKeyPath)
+// }
+// const server = new http.createServer()
+const wss = new WebSocket.Server({ port: CONFIG.wsPort })
 // const wss = new WebSocket.Server({
 //   port: CONFIG.wsPort,
 //   perMessageDeflate: {
@@ -217,4 +217,4 @@ class Connection {
   }
 }
 
-server.listen(CONFIG.wsPort)
+// server.listen(CONFIG.wsPort)

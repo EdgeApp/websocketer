@@ -5,9 +5,9 @@ const net = require('net')
 
 const server = net.createServer((c) => {
   // 'connection' listener
-  console.log('client connected')
+  logger('client connected')
   c.on('end', () => {
-    console.log('client disconnected')
+    logger('client disconnected')
   })
   c.write('hello\r\n')
   c.pipe(c)
@@ -17,5 +17,5 @@ server.on('error', (err) => {
 })
 // $FlowFixMe
 server.listen(50001, () => {
-  console.log('server bound')
+  logger('server bound')
 })

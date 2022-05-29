@@ -162,6 +162,18 @@ class Connection {
       })
     })
 
+    this.ws.on('message', message => {
+      // this.connlog(`Received WS: ${message}`)
+      this.client.write(message, 'utf8', error => {
+        if (error) {
+          this.connlog('Error writing to WS', error)
+          deleteConnection(this.address)
+        } else {
+          // this.connlog('Socket write!')
+        }
+      })
+    })
+
     this.client.connect(
       { host: this.tcpServer, port: this.tcpPort },
       status => {
@@ -171,18 +183,6 @@ class Connection {
           this.connlog(`Connected`)
         }
         this.tcpConnected = true
-
-        this.ws.on('message', message => {
-          // this.connlog(`Received WS: ${message}`)
-          this.client.write(message, 'utf8', error => {
-            if (error) {
-              this.connlog('Error writing to WS', error)
-              deleteConnection(this.address)
-            } else {
-              // this.connlog('Socket write!')
-            }
-          })
-        })
       }
     )
 
